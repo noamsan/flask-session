@@ -19,8 +19,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          echo "Installing flake8 pytest Flask"
-          pip install flake8 pytest Flask && echo "Installed flake8 pytest Flask"
+          pip install flake8 pytest
+          pip install Flask flask_sqlalchemy cachelib pymongo redis
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
         run: |
