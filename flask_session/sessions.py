@@ -22,6 +22,8 @@ from flask.sessions import SessionMixin
 from werkzeug.datastructures import CallbackDict
 from itsdangerous import Signer, BadSignature, want_bytes
 
+if sys.version_info[0] >= 3:
+    unicode = str
 
 PY2 = sys.version_info[0] == 2
 if not PY2:
