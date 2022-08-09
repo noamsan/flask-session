@@ -2,7 +2,7 @@ import unittest
 import tempfile
 
 import flask
-from flask.ext.session import Session
+from flask_session import Session
 
 
 class FlaskSessionTestCase(unittest.TestCase):
@@ -33,10 +33,15 @@ class FlaskSessionTestCase(unittest.TestCase):
         @app.route('/get')
         def get():
             return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
 
         c = app.test_client()
         self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value set')
         self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
     
     
     def test_memcached_session(self):
@@ -50,10 +55,15 @@ class FlaskSessionTestCase(unittest.TestCase):
         @app.route('/get')
         def get():
             return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
 
         c = app.test_client()
         self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value set')
         self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
     
     
     def test_filesystem_session(self):
@@ -68,14 +78,93 @@ class FlaskSessionTestCase(unittest.TestCase):
         @app.route('/get')
         def get():
             return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
 
         c = app.test_client()
         self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value set')
         self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
     
     def test_mongodb_session(self):
         app = flask.Flask(__name__)
+        app.testing = True
         app.config['SESSION_TYPE'] = 'mongodb'
+        Session(app)
+        @app.route('/set', methods=['POST'])
+        def set():
+            flask.session['value'] = flask.request.form['value']
+            return 'value set'
+        @app.route('/get')
+        def get():
+            return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
+
+        c = app.test_client()
+        self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value set')
+        self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
+
+    def test_flasksqlalchemy_session(self):
+        app = flask.Flask(__name__)
+        app.debug = True
+        app.config['SESSION_TYPE'] = 'sqlalchemy'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        Session(app)
+        @app.route('/set', methods=['POST'])
+        def set():
+            flask.session['value'] = flask.request.form['value']
+            return 'value set'
+        @app.route('/get')
+        def get():
+            return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
+
+        c = app.test_client()
+        self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value '
+                                                                    b'set')
+        self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
+
+    def test_flasksqlalchemy_session_with_signer(self):
+        app = flask.Flask(__name__)
+        app.debug = True
+        app.secret_key = 'test_secret_key'
+        app.config['SESSION_TYPE'] = 'sqlalchemy'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'
+        app.config['SESSION_USE_SIGNER'] = True
+        session = Session(app)
+        @app.route('/set', methods=['POST'])
+        def set():
+            flask.session['value'] = flask.request.form['value']
+            return 'value set'
+        @app.route('/get')
+        def get():
+            return flask.session['value']
+        @app.route('/delete', methods=['POST'])
+        def delete():
+            del flask.session['value']
+            return 'value deleted'
+
+        c = app.test_client()
+        self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value '
+                                                                    b'set')
+        self.assertEqual(c.get('/get').data, b'42')
+        c.post('/delete')
+
+    def test_session_use_signer(self):
+        app = flask.Flask(__name__)
+        app.secret_key = 'test_secret_key'
+        app.config['SESSION_TYPE'] = 'redis'
+        app.config['SESSION_USE_SIGNER'] = True
         Session(app)
         @app.route('/set', methods=['POST'])
         def set():
@@ -88,7 +177,6 @@ class FlaskSessionTestCase(unittest.TestCase):
         c = app.test_client()
         self.assertEqual(c.post('/set', data={'value': '42'}).data, b'value set')
         self.assertEqual(c.get('/get').data, b'42')
-
 
 if __name__ == "__main__":
     unittest.main()
